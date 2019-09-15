@@ -2,6 +2,7 @@ package nervo
 
 import (
 	"bytes"
+	"errors"
 	"log"
 	"time"
 )
@@ -15,12 +16,24 @@ type readOutputMessage struct {
 	answerChan chan string
 }
 
+type flashAnswer struct {
+	Error  error
+	Output string
+}
+
+type flashMessage struct {
+	portName       string
+	hexFileContent []byte
+	answerChan     chan flashAnswer
+}
+
 // Manager controls all interactions with the controllers from outside
 type Manager struct {
 	controllers         []*controller
 	currentPortsChan    chan []string
 	listControllersChan chan listControllersMessage
 	readOutputChan      chan readOutputMessage
+	flashChan           chan flashMessage
 }
 
 // NewManager retuns a Manager that is ready for use
@@ -29,6 +42,7 @@ func NewManager() *Manager {
 		currentPortsChan:    make(chan []string),
 		listControllersChan: make(chan listControllersMessage),
 		readOutputChan:      make(chan readOutputMessage),
+		flashChan:           make(chan flashMessage),
 	}
 	go m.lookForNewPorts()
 	go m.manageControllers()
@@ -65,6 +79,15 @@ func (m *Manager) manageControllers() {
 				message.answerChan <- "no controller found at " + message.portName
 			}
 			break
+		case message := <-m.flashChan:
+			controller := m.controllerForPort(message.portName)
+			if controller != nil {
+				output, err := controller.flash(message.hexFileContent)
+				message.answerChan <- flashAnswer{Error: err, Output: output}
+			} else {
+				message.answerChan <- flashAnswer{Error: errors.New("no controller found at " + message.portName)}
+			}
+
 		}
 	}
 }
@@ -81,7 +104,13 @@ func (m *Manager) readFromController(portName string) string {
 	message := readOutputMessage{answerChan: answerChan, portName: portName}
 	m.readOutputChan <- message
 	return <-answerChan
+}
 
+func (m *Manager) flashController(portName string, hexFileContent []byte) flashAnswer {
+	answerChan := make(chan flashAnswer)
+	message := flashMessage{answerChan: answerChan, portName: portName, hexFileContent: hexFileContent}
+	m.flashChan <- message
+	return <-answerChan
 }
 
 func (m *Manager) controllerForPort(portName string) *controller {

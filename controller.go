@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"sync"
 
@@ -32,8 +34,11 @@ func newController(serialPort string) *controller {
 	}
 }
 
-func (c *controller) flash(hexFilePath string) error {
+func (c *controller) flash(hexFileContent []byte) (output string, err error) {
 	c.closeSerial()
+
+	hexFilePath, hexfileCleanup := writeHexFileToTemporaryPath(hexFileContent)
+	defer hexfileCleanup()
 
 	cmd := exec.Command(
 		"sh",
@@ -42,8 +47,8 @@ func (c *controller) flash(hexFilePath string) error {
 	)
 
 	out, err := cmd.CombinedOutput()
-	fmt.Println(string(out))
-	return err
+	go c.readFromSerial()
+	return string(out), err
 }
 
 func (c *controller) readFromSerial() error {
@@ -95,4 +100,22 @@ func (c *controller) closeSerial() {
 		c.serialPort.Close()
 		c.serialPort = nil
 	}
+}
+
+func writeHexFileToTemporaryPath(hexFileContent []byte) (path string, cleanup func()) {
+	tmpfile, err := ioutil.TempFile("", "flashing_*.hex")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if _, err := tmpfile.Write(hexFileContent); err != nil {
+		log.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		log.Fatal(err)
+	}
+	cleanupFunc := func() {
+		os.Remove(tmpfile.Name())
+	}
+	return tmpfile.Name(), cleanupFunc
 }
