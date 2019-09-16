@@ -3,4 +3,3 @@ gen:
 
 build-for-pi:
 	GOARCH=arm GOOS=linux go build -o nervo-server server/main.go
-
