@@ -37,9 +37,11 @@ func main() {
 
 	controller := askForControllerName(response)
 	switch cmd {
-	case "read":
+	case "read once":
 		readFromController(c, controller)
 		break
+	case "read continuously":
+		readContiniouslyFromController(c, controller)
 	case "flash":
 		flashController(c, controller)
 		break
@@ -55,6 +57,23 @@ func readFromController(client proto.NervoServiceClient, controllerName string) 
 		panic(err)
 	}
 	fmt.Println(output.Output)
+}
+
+func readContiniouslyFromController(client proto.NervoServiceClient, controllerName string) {
+	stream, err := client.ReadControllerOutputContinuously(context.Background(), &proto.ReadControllerOutputRequest{
+		ControllerPortName: controllerName,
+	})
+	if err != nil {
+		panic(err)
+	}
+	for {
+		response, err := stream.Recv()
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf(response.Output)
+	}
 }
 
 func flashController(client proto.NervoServiceClient, controllerName string) {
@@ -107,7 +126,8 @@ func askForControllerName(response *proto.ControllerListResponse) string {
 func chooseBetweenCommands() string {
 	commands := []string{
 		"flash",
-		"read",
+		"read once",
+		"read continuously",
 	}
 	s := promptui.Select{
 		Label: "What do you want to do?",

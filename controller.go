@@ -19,18 +19,21 @@ const (
 )
 
 type controller struct {
-	SerialPortPath string
-	serialPort     *serial.Port
-	outputbuffer   *bytes.Buffer
-	outputMutex    *sync.Mutex
-	Error          error
+	SerialPortPath     string
+	serialPort         *serial.Port
+	outputbuffer       *bytes.Buffer
+	outputMutex        *sync.Mutex
+	readNotifierChan   chan []byte
+	readNotifierMutext *sync.Mutex
+	Error              error
 }
 
 func newController(serialPort string) *controller {
 	return &controller{
-		SerialPortPath: serialPort,
-		outputbuffer:   &bytes.Buffer{},
-		outputMutex:    &sync.Mutex{},
+		SerialPortPath:     serialPort,
+		outputbuffer:       &bytes.Buffer{},
+		outputMutex:        &sync.Mutex{},
+		readNotifierMutext: &sync.Mutex{},
 	}
 }
 
@@ -69,12 +72,20 @@ func (c *controller) readFromSerial() error {
 			log.Println(c.SerialPortPath, err)
 			break
 		}
-		c.appendToCappedOutputBuffer([]byte(l))
+		c.notifyOrAppendToCappedOutputBuffer([]byte(l))
 	}
 	return err
 }
 
-func (c *controller) appendToCappedOutputBuffer(b []byte) {
+func (c *controller) notifyOrAppendToCappedOutputBuffer(b []byte) {
+	c.readNotifierMutext.Lock()
+	defer c.readNotifierMutext.Unlock()
+
+	if c.readNotifierChan != nil {
+		c.readNotifierChan <- b
+		return
+	}
+
 	c.outputMutex.Lock()
 	defer c.outputMutex.Unlock()
 
@@ -93,6 +104,26 @@ func (c *controller) useOutput(f func(outputBuffer *bytes.Buffer)) {
 	defer c.outputMutex.Unlock()
 
 	f(c.outputbuffer)
+}
+
+func (c *controller) notifyOnRead() chan []byte {
+	c.clearNotifier()
+
+	c.readNotifierMutext.Lock()
+	defer c.readNotifierMutext.Unlock()
+	notifierChan := make(chan []byte, 10)
+	c.readNotifierChan = notifierChan
+
+	return notifierChan
+}
+
+func (c *controller) clearNotifier() {
+	c.readNotifierMutext.Lock()
+	defer c.readNotifierMutext.Unlock()
+	if c.readNotifierChan != nil {
+		close(c.readNotifierChan)
+		c.readNotifierChan = nil
+	}
 }
 
 func (c *controller) closeSerial() {

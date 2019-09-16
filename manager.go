@@ -27,6 +27,15 @@ type flashMessage struct {
 	answerChan     chan flashAnswer
 }
 
+type readContinuousMessage struct {
+	portName   string
+	answerChan chan chan []byte
+}
+
+type stopReadingMessage struct {
+	portName string
+}
+
 // Manager controls all interactions with the controllers from outside
 type Manager struct {
 	controllers         []*controller
@@ -34,6 +43,8 @@ type Manager struct {
 	listControllersChan chan listControllersMessage
 	readOutputChan      chan readOutputMessage
 	flashChan           chan flashMessage
+	readContinuousChan  chan readContinuousMessage
+	stopReadingChan     chan stopReadingMessage
 }
 
 // NewManager retuns a Manager that is ready for use
@@ -43,7 +54,10 @@ func NewManager() *Manager {
 		listControllersChan: make(chan listControllersMessage),
 		readOutputChan:      make(chan readOutputMessage),
 		flashChan:           make(chan flashMessage),
+		readContinuousChan:  make(chan readContinuousMessage),
+		stopReadingChan:     make(chan stopReadingMessage),
 	}
+
 	go m.lookForNewPorts()
 	go m.manageControllers()
 	return m
@@ -87,7 +101,22 @@ func (m *Manager) manageControllers() {
 			} else {
 				message.answerChan <- flashAnswer{Error: errors.New("no controller found at " + message.portName)}
 			}
-
+			break
+		case message := <-m.readContinuousChan:
+			controller := m.controllerForPort(message.portName)
+			if controller != nil {
+				notifierChan := controller.notifyOnRead()
+				message.answerChan <- notifierChan
+			} else {
+				message.answerChan <- nil
+			}
+			break
+		case message := <-m.stopReadingChan:
+			controller := m.controllerForPort(message.portName)
+			if controller != nil {
+				controller.clearNotifier()
+			}
+			break
 		}
 	}
 }
@@ -111,6 +140,18 @@ func (m *Manager) flashController(portName string, hexFileContent []byte) flashA
 	message := flashMessage{answerChan: answerChan, portName: portName, hexFileContent: hexFileContent}
 	m.flashChan <- message
 	return <-answerChan
+}
+
+func (m *Manager) readContinuouslyFromController(portName string) chan []byte {
+	answerChan := make(chan chan []byte)
+	message := readContinuousMessage{answerChan: answerChan, portName: portName}
+	m.readContinuousChan <- message
+	return <-answerChan
+}
+
+func (m *Manager) stopReadingFromController(portName string) {
+	message := stopReadingMessage{portName: portName}
+	m.stopReadingChan <- message
 }
 
 func (m *Manager) controllerForPort(portName string) *controller {

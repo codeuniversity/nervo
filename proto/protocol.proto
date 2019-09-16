@@ -33,4 +33,5 @@ service NervoService {
   rpc ListControllers(ControllerListRequest) returns (ControllerListResponse);
   rpc ReadControllerOutput(ReadControllerOutputRequest) returns (ReadControllerOutputResponse);
   rpc FlashController(FlashControllerRequest) returns (FlashControllerResponse);
+  rpc ReadControllerOutputContinuously(ReadControllerOutputRequest)returns(stream ReadControllerOutputResponse);
 }

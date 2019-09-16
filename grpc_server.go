@@ -2,6 +2,7 @@ package nervo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -67,4 +68,36 @@ func (s *GrpcServer) FlashController(_ context.Context, request *proto.FlashCont
 		return nil, answer.Error
 	}
 	return &proto.FlashControllerResponse{Output: answer.Output}, nil
+}
+
+// ReadControllerOutputContinuously for the grpc NervoService
+func (s *GrpcServer) ReadControllerOutputContinuously(request *proto.ReadControllerOutputRequest, stream proto.NervoService_ReadControllerOutputContinuouslyServer) error {
+
+	notifierChan := s.Manager.readContinuouslyFromController(request.ControllerPortName)
+
+	if notifierChan == nil {
+		return errors.New("no controller found for " + request.ControllerPortName)
+	}
+
+	output := s.Manager.readFromController(request.ControllerPortName)
+	if len(output) > 0 {
+		err := stream.Send(&proto.ReadControllerOutputResponse{Output: output})
+		if err != nil {
+			fmt.Println(err)
+			s.Manager.stopReadingFromController(request.ControllerPortName)
+			return err
+		}
+	}
+
+	for newOutput := range notifierChan {
+		if len(newOutput) > 0 {
+			err := stream.Send(&proto.ReadControllerOutputResponse{Output: string(newOutput)})
+			if err != nil {
+				fmt.Println(err)
+				s.Manager.stopReadingFromController(request.ControllerPortName)
+				return err
+			}
+		}
+	}
+	return nil
 }
