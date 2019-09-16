@@ -43,11 +43,12 @@ func (s *GrpcServer) Listen() {
 
 // ListControllers for the grpc NervoService
 func (s *GrpcServer) ListControllers(_ context.Context, _ *proto.ControllerListRequest) (*proto.ControllerListResponse, error) {
-	portNames := s.Manager.listControllers()
+	controllerInfos := s.Manager.listControllers()
 	infos := []*proto.ControllerInfo{}
-	for _, name := range portNames {
+	for _, info := range controllerInfos {
 		infos = append(infos, &proto.ControllerInfo{
-			PortName: name,
+			PortName: info.portName,
+			Name:     info.name,
 		})
 	}
 
@@ -100,4 +101,20 @@ func (s *GrpcServer) ReadControllerOutputContinuously(request *proto.ReadControl
 		}
 	}
 	return nil
+}
+
+// SetControllerName for the grpc NervoService
+func (s *GrpcServer) SetControllerName(_ context.Context, request *proto.ControllerInfo) (*proto.ControllerListResponse, error) {
+	s.Manager.setControllerName(request.PortName, request.Name)
+
+	controllerInfos := s.Manager.listControllers()
+	infos := []*proto.ControllerInfo{}
+	for _, info := range controllerInfos {
+		infos = append(infos, &proto.ControllerInfo{
+			PortName: info.portName,
+			Name:     info.name,
+		})
+	}
+
+	return &proto.ControllerListResponse{ControllerInfos: infos}, nil
 }

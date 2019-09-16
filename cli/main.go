@@ -45,8 +45,32 @@ func main() {
 	case "flash":
 		flashController(c, controller)
 		break
+	case "set name":
+		setControllerName(c, controller)
+		break
 	}
 
+}
+
+func setControllerName(client proto.NervoServiceClient, controllerPortName string) {
+	prompt := promptui.Prompt{
+		Label: "What should the controller be named?",
+	}
+	name, err := prompt.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	response, err := client.SetControllerName(context.Background(), &proto.ControllerInfo{
+		PortName: controllerPortName,
+		Name:     name,
+	})
+	if err != nil {
+		panic(err)
+	}
+	for _, info := range response.ControllerInfos {
+		fmt.Println(info.Name, info.PortName)
+	}
 }
 
 func readFromController(client proto.NervoServiceClient, controllerName string) {
@@ -105,22 +129,35 @@ func flashController(client proto.NervoServiceClient, controllerName string) {
 }
 
 func askForControllerName(response *proto.ControllerListResponse) string {
-	items := []string{}
+	items := response.ControllerInfos
 
-	for _, info := range response.ControllerInfos {
-		items = append(items, info.PortName)
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "> {{ .Name | cyan }} {{ .PortName | red }}",
+		Inactive: "  {{ .Name | cyan }} {{ .PortName | red }}",
+		Selected: "✔ {{ .Name | cyan }} {{ .PortName | red }}",
+	}
+
+	searcher := func(input string, index int) bool {
+		controller := items[index]
+		name := strings.Replace(strings.ToLower(controller.Name), " ", "", -1)
+		portName := strings.Replace(strings.ToLower(controller.PortName), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input) || strings.Contains(portName, input)
 	}
 
 	s := promptui.Select{
-		Label: "What controller?",
-		Items: items,
+		Label:     "What controller?",
+		Items:     items,
+		Templates: templates,
+		Searcher:  searcher,
 	}
-	_, choice, err := s.Run()
+	i, _, err := s.Run()
 	if err != nil {
 		panic(err)
 	}
-
-	return choice
+	return items[i].PortName
 }
 
 func chooseBetweenCommands() string {
@@ -128,6 +165,7 @@ func chooseBetweenCommands() string {
 		"flash",
 		"read once",
 		"read continuously",
+		"set name",
 	}
 	s := promptui.Select{
 		Label: "What do you want to do?",

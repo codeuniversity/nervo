@@ -8,7 +8,12 @@ import (
 )
 
 type listControllersMessage struct {
-	answerChan chan []string
+	answerChan chan []controllerInfo
+}
+
+type controllerInfo struct {
+	name     string
+	portName string
 }
 
 type readOutputMessage struct {
@@ -36,6 +41,11 @@ type stopReadingMessage struct {
 	portName string
 }
 
+type nameControllerMessage struct {
+	portName string
+	name     string
+}
+
 // Manager controls all interactions with the controllers from outside
 type Manager struct {
 	controllers         []*controller
@@ -45,6 +55,7 @@ type Manager struct {
 	flashChan           chan flashMessage
 	readContinuousChan  chan readContinuousMessage
 	stopReadingChan     chan stopReadingMessage
+	nameControllerChan  chan nameControllerMessage
 }
 
 // NewManager retuns a Manager that is ready for use
@@ -56,6 +67,7 @@ func NewManager() *Manager {
 		flashChan:           make(chan flashMessage),
 		readContinuousChan:  make(chan readContinuousMessage),
 		stopReadingChan:     make(chan stopReadingMessage),
+		nameControllerChan:  make(chan nameControllerMessage),
 	}
 
 	go m.lookForNewPorts()
@@ -71,11 +83,11 @@ func (m *Manager) manageControllers() {
 			m.handleCurrentPorts(currentPorts)
 			break
 		case message := <-m.listControllersChan:
-			names := []string{}
+			infos := []controllerInfo{}
 			for _, controller := range m.controllers {
-				names = append(names, controller.SerialPortPath)
+				infos = append(infos, controllerInfo{portName: controller.SerialPortPath, name: controller.Name})
 			}
-			message.answerChan <- names
+			message.answerChan <- infos
 			break
 
 		case message := <-m.readOutputChan:
@@ -117,12 +129,18 @@ func (m *Manager) manageControllers() {
 				controller.clearNotifier()
 			}
 			break
+		case message := <-m.nameControllerChan:
+			controller := m.controllerForPort(message.portName)
+			if controller != nil {
+				controller.Name = message.name
+			}
+			break
 		}
 	}
 }
 
-func (m *Manager) listControllers() []string {
-	answerChan := make(chan []string)
+func (m *Manager) listControllers() []controllerInfo {
+	answerChan := make(chan []controllerInfo)
 	message := listControllersMessage{answerChan: answerChan}
 	m.listControllersChan <- message
 	return <-answerChan
@@ -152,6 +170,11 @@ func (m *Manager) readContinuouslyFromController(portName string) chan []byte {
 func (m *Manager) stopReadingFromController(portName string) {
 	message := stopReadingMessage{portName: portName}
 	m.stopReadingChan <- message
+}
+
+func (m *Manager) setControllerName(portName string, name string) {
+	message := nameControllerMessage{portName: portName, name: name}
+	m.nameControllerChan <- message
 }
 
 func (m *Manager) controllerForPort(portName string) *controller {

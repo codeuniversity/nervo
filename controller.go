@@ -20,6 +20,7 @@ const (
 
 type controller struct {
 	SerialPortPath     string
+	Name               string
 	serialPort         *serial.Port
 	outputbuffer       *bytes.Buffer
 	outputMutex        *sync.Mutex
