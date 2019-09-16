@@ -20,22 +20,22 @@ const (
 )
 
 type controller struct {
-	SerialPortPath     string
-	Name               string
-	serialPort         *serial.Port
-	outputbuffer       *bytes.Buffer
-	outputMutex        *sync.Mutex
-	readNotifierChan   chan []byte
-	readNotifierMutext *sync.Mutex
-	Error              error
+	SerialPortPath    string
+	Name              string
+	serialPort        *serial.Port
+	outputbuffer      *bytes.Buffer
+	outputMutex       *sync.Mutex
+	readNotifierChan  chan []byte
+	readNotifierMutex *sync.Mutex
+	Error             error
 }
 
 func newController(serialPort string) *controller {
 	return &controller{
-		SerialPortPath:     serialPort,
-		outputbuffer:       &bytes.Buffer{},
-		outputMutex:        &sync.Mutex{},
-		readNotifierMutext: &sync.Mutex{},
+		SerialPortPath:    serialPort,
+		outputbuffer:      &bytes.Buffer{},
+		outputMutex:       &sync.Mutex{},
+		readNotifierMutex: &sync.Mutex{},
 	}
 }
 
@@ -74,6 +74,8 @@ func (c *controller) readFromSerial() error {
 		l, err = r.ReadString('\n')
 		if err != nil {
 			c.Error = err
+			c.clearNotifier()
+			c.closeSerial()
 			log.Println(c.SerialPortPath, err)
 			break
 		}
@@ -83,8 +85,8 @@ func (c *controller) readFromSerial() error {
 }
 
 func (c *controller) notifyOrAppendToCappedOutputBuffer(b []byte) {
-	c.readNotifierMutext.Lock()
-	defer c.readNotifierMutext.Unlock()
+	c.readNotifierMutex.Lock()
+	defer c.readNotifierMutex.Unlock()
 
 	if c.readNotifierChan != nil {
 		c.readNotifierChan <- b
@@ -114,8 +116,8 @@ func (c *controller) useOutput(f func(outputBuffer *bytes.Buffer)) {
 func (c *controller) notifyOnRead() chan []byte {
 	c.clearNotifier()
 
-	c.readNotifierMutext.Lock()
-	defer c.readNotifierMutext.Unlock()
+	c.readNotifierMutex.Lock()
+	defer c.readNotifierMutex.Unlock()
 	notifierChan := make(chan []byte, 10)
 	c.readNotifierChan = notifierChan
 
@@ -123,8 +125,8 @@ func (c *controller) notifyOnRead() chan []byte {
 }
 
 func (c *controller) clearNotifier() {
-	c.readNotifierMutext.Lock()
-	defer c.readNotifierMutext.Unlock()
+	c.readNotifierMutex.Lock()
+	defer c.readNotifierMutex.Unlock()
 	if c.readNotifierChan != nil {
 		close(c.readNotifierChan)
 		c.readNotifierChan = nil
@@ -132,6 +134,8 @@ func (c *controller) clearNotifier() {
 }
 
 func (c *controller) closeSerial() {
+	c.outputMutex.Lock()
+	defer c.outputMutex.Unlock()
 	if c.serialPort != nil {
 		c.serialPort.Close()
 		c.serialPort = nil
