@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/tarm/serial"
 )
@@ -40,6 +41,9 @@ func newController(serialPort string) *controller {
 
 func (c *controller) flash(hexFileContent []byte) (output string, err error) {
 	c.closeSerial()
+	c.clearNotifier()
+	time.Sleep(time.Millisecond * 200)
+	c.Error = nil
 
 	hexFilePath, hexfileCleanup := writeHexFileToTemporaryPath(hexFileContent)
 	defer hexfileCleanup()
