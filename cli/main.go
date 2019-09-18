@@ -118,7 +118,7 @@ func flashController(client proto.NervoServiceClient, controllerName string) {
 	}
 	content, err := ioutil.ReadFile(hexFileName)
 	if err != nil {
-		panic(err)
+		panic(string(content) + ":" + err.Error())
 	}
 
 	response, err := client.FlashController(context.Background(), &proto.FlashControllerRequest{ControllerPortName: controllerName, HexFileContent: content})

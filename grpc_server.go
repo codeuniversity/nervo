@@ -65,10 +65,7 @@ func (s *GrpcServer) ReadControllerOutput(_ context.Context, request *proto.Read
 // FlashController for the grpc NervoService
 func (s *GrpcServer) FlashController(_ context.Context, request *proto.FlashControllerRequest) (*proto.FlashControllerResponse, error) {
 	answer := s.Manager.flashController(request.ControllerPortName, request.HexFileContent)
-	if answer.Error != nil {
-		return nil, answer.Error
-	}
-	return &proto.FlashControllerResponse{Output: answer.Output}, nil
+	return &proto.FlashControllerResponse{Output: answer.Output}, answer.Error
 }
 
 // ReadControllerOutputContinuously for the grpc NervoService
