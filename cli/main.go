@@ -17,9 +17,11 @@ import (
 var flashSource string
 
 func main() {
-	if len(os.Args) < 2 {
-		panic("You need to supply the address of the nervo-server")
+	if len(os.Args) < 2 || os.Args[1] == "help" {
+		fmt.Println("Usage: nervo <server address with port> [path containing .hex files]")
+		os.Exit(1)
 	}
+
 	conn, err := grpc.Dial(os.Args[1], grpc.WithInsecure())
 	if err != nil {
 		panic(err)
