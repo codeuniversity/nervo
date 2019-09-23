@@ -3,6 +3,7 @@ package nervo
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -44,19 +45,25 @@ func (c *controller) flash(hexFileContent []byte) (output string, err error) {
 	c.clearNotifier()
 	time.Sleep(time.Millisecond * 200)
 	c.Error = nil
+	err = withTimeOut(time.Second*10, func() {
+		hexFilePath, hexfileCleanup := writeHexFileToTemporaryPath(hexFileContent)
+		defer hexfileCleanup()
 
-	hexFilePath, hexfileCleanup := writeHexFileToTemporaryPath(hexFileContent)
-	defer hexfileCleanup()
+		cmd := exec.Command(
+			"sh",
+			"-c",
+			fmt.Sprintf("avrdude -p m328p -c arduino -P %s -b 115200 -U flash:w:%s", c.SerialPortPath, hexFilePath),
+		)
 
-	cmd := exec.Command(
-		"sh",
-		"-c",
-		fmt.Sprintf("avrdude -p m328p -c arduino -P %s -b 115200 -U flash:w:%s", c.SerialPortPath, hexFilePath),
-	)
-
-	out, err := cmd.CombinedOutput()
+		out, execErr := cmd.CombinedOutput()
+		output = string(out)
+		err = execErr
+	})
+	if err != nil {
+		return "", err
+	}
 	go c.readFromSerial()
-	return string(out), err
+	return
 }
 
 func (c *controller) readFromSerial() error {
@@ -158,4 +165,26 @@ func writeHexFileToTemporaryPath(hexFileContent []byte) (path string, cleanup fu
 		os.Remove(tmpfile.Name())
 	}
 	return tmpfile.Name(), cleanupFunc
+}
+
+//ErrTimeoutReached describes a situation where a certain action took longer than we expected and was aborted because of that
+var ErrTimeoutReached error = errors.New("Timeout was reached")
+
+//withTimeout returns an error if the timeout was reached
+func withTimeOut(timeout time.Duration, f func()) error {
+	t := time.NewTimer(timeout)
+	fDoneChan := make(chan struct{})
+	go func() {
+		f()
+		fDoneChan <- struct{}{}
+	}()
+
+	select {
+	case <-fDoneChan:
+		t.Stop()
+
+		return nil
+	case <-t.C:
+		return ErrTimeoutReached
+	}
 }
