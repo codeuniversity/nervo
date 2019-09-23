@@ -46,6 +46,10 @@ type nameControllerMessage struct {
 	name     string
 }
 
+type pingMessage struct {
+	pongChan chan struct{}
+}
+
 // Manager controls all interactions with the controllers from outside
 type Manager struct {
 	controllers         []*controller
@@ -56,6 +60,7 @@ type Manager struct {
 	readContinuousChan  chan readContinuousMessage
 	stopReadingChan     chan stopReadingMessage
 	nameControllerChan  chan nameControllerMessage
+	pingChan            chan pingMessage
 }
 
 // NewManager retuns a Manager that is ready for use
@@ -68,10 +73,14 @@ func NewManager() *Manager {
 		readContinuousChan:  make(chan readContinuousMessage),
 		stopReadingChan:     make(chan stopReadingMessage),
 		nameControllerChan:  make(chan nameControllerMessage),
+		pingChan:            make(chan pingMessage),
 	}
 
 	go m.lookForNewPorts()
 	go m.manageControllers()
+	go watchManagerHealth(m, func() {
+		panic("I don't know, just kill him I guess")
+	})
 	return m
 }
 
@@ -134,6 +143,9 @@ func (m *Manager) manageControllers() {
 			if controller != nil {
 				controller.Name = message.name
 			}
+			break
+		case m := <-m.pingChan:
+			m.pongChan <- struct{}{}
 			break
 		}
 	}
@@ -198,6 +210,16 @@ func (m *Manager) lookForNewPorts() {
 
 		m.currentPortsChan <- ports
 	}
+}
+
+func (m *Manager) pingWithTimeout(timeout time.Duration) error {
+	return withTimeOut(timeout, func() {
+		pongChan := make(chan struct{})
+		m.pingChan <- pingMessage{
+			pongChan: pongChan,
+		}
+		<-pongChan
+	})
 }
 
 func (m *Manager) handleCurrentPorts(currentPorts []string) {
