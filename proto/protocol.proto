@@ -30,10 +30,17 @@ message FlashControllerResponse{
   string output = 1;
 }
 
+message ResetUsbRequest{}
+
+message ResetUsbResponse{
+  string output = 1;
+}
+
 service NervoService {
   rpc ListControllers(ControllerListRequest) returns (ControllerListResponse);
   rpc ReadControllerOutput(ReadControllerOutputRequest) returns (ReadControllerOutputResponse);
   rpc FlashController(FlashControllerRequest) returns (FlashControllerResponse);
   rpc ReadControllerOutputContinuously(ReadControllerOutputRequest)returns(stream ReadControllerOutputResponse);
   rpc SetControllerName(ControllerInfo) returns (ControllerListResponse);
+  rpc ResetUsb(ResetUsbRequest) returns (ResetUsbResponse);
 }

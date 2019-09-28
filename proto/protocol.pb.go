@@ -3,12 +3,15 @@
 
 package proto
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-
 import (
+	fmt "fmt"
+
+	proto "github.com/golang/protobuf/proto"
+
+	math "math"
+
 	context "golang.org/x/net/context"
+
 	grpc "google.golang.org/grpc"
 )
 
@@ -35,7 +38,7 @@ func (m *ControllerInfo) Reset()         { *m = ControllerInfo{} }
 func (m *ControllerInfo) String() string { return proto.CompactTextString(m) }
 func (*ControllerInfo) ProtoMessage()    {}
 func (*ControllerInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_d110b2ab1227f587, []int{0}
+	return fileDescriptor_protocol_993f1e78bb12a8bd, []int{0}
 }
 func (m *ControllerInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ControllerInfo.Unmarshal(m, b)
@@ -79,7 +82,7 @@ func (m *ControllerListRequest) Reset()         { *m = ControllerListRequest{} }
 func (m *ControllerListRequest) String() string { return proto.CompactTextString(m) }
 func (*ControllerListRequest) ProtoMessage()    {}
 func (*ControllerListRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_d110b2ab1227f587, []int{1}
+	return fileDescriptor_protocol_993f1e78bb12a8bd, []int{1}
 }
 func (m *ControllerListRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ControllerListRequest.Unmarshal(m, b)
@@ -110,7 +113,7 @@ func (m *ControllerListResponse) Reset()         { *m = ControllerListResponse{}
 func (m *ControllerListResponse) String() string { return proto.CompactTextString(m) }
 func (*ControllerListResponse) ProtoMessage()    {}
 func (*ControllerListResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_d110b2ab1227f587, []int{2}
+	return fileDescriptor_protocol_993f1e78bb12a8bd, []int{2}
 }
 func (m *ControllerListResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ControllerListResponse.Unmarshal(m, b)
@@ -148,7 +151,7 @@ func (m *ReadControllerOutputRequest) Reset()         { *m = ReadControllerOutpu
 func (m *ReadControllerOutputRequest) String() string { return proto.CompactTextString(m) }
 func (*ReadControllerOutputRequest) ProtoMessage()    {}
 func (*ReadControllerOutputRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_d110b2ab1227f587, []int{3}
+	return fileDescriptor_protocol_993f1e78bb12a8bd, []int{3}
 }
 func (m *ReadControllerOutputRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReadControllerOutputRequest.Unmarshal(m, b)
@@ -186,7 +189,7 @@ func (m *ReadControllerOutputResponse) Reset()         { *m = ReadControllerOutp
 func (m *ReadControllerOutputResponse) String() string { return proto.CompactTextString(m) }
 func (*ReadControllerOutputResponse) ProtoMessage()    {}
 func (*ReadControllerOutputResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_d110b2ab1227f587, []int{4}
+	return fileDescriptor_protocol_993f1e78bb12a8bd, []int{4}
 }
 func (m *ReadControllerOutputResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ReadControllerOutputResponse.Unmarshal(m, b)
@@ -225,7 +228,7 @@ func (m *FlashControllerRequest) Reset()         { *m = FlashControllerRequest{}
 func (m *FlashControllerRequest) String() string { return proto.CompactTextString(m) }
 func (*FlashControllerRequest) ProtoMessage()    {}
 func (*FlashControllerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_d110b2ab1227f587, []int{5}
+	return fileDescriptor_protocol_993f1e78bb12a8bd, []int{5}
 }
 func (m *FlashControllerRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FlashControllerRequest.Unmarshal(m, b)
@@ -270,7 +273,7 @@ func (m *FlashControllerResponse) Reset()         { *m = FlashControllerResponse
 func (m *FlashControllerResponse) String() string { return proto.CompactTextString(m) }
 func (*FlashControllerResponse) ProtoMessage()    {}
 func (*FlashControllerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_protocol_d110b2ab1227f587, []int{6}
+	return fileDescriptor_protocol_993f1e78bb12a8bd, []int{6}
 }
 func (m *FlashControllerResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_FlashControllerResponse.Unmarshal(m, b)
@@ -297,6 +300,74 @@ func (m *FlashControllerResponse) GetOutput() string {
 	return ""
 }
 
+type ResetUsbRequest struct {
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ResetUsbRequest) Reset()         { *m = ResetUsbRequest{} }
+func (m *ResetUsbRequest) String() string { return proto.CompactTextString(m) }
+func (*ResetUsbRequest) ProtoMessage()    {}
+func (*ResetUsbRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_protocol_993f1e78bb12a8bd, []int{7}
+}
+func (m *ResetUsbRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResetUsbRequest.Unmarshal(m, b)
+}
+func (m *ResetUsbRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResetUsbRequest.Marshal(b, m, deterministic)
+}
+func (dst *ResetUsbRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResetUsbRequest.Merge(dst, src)
+}
+func (m *ResetUsbRequest) XXX_Size() int {
+	return xxx_messageInfo_ResetUsbRequest.Size(m)
+}
+func (m *ResetUsbRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResetUsbRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResetUsbRequest proto.InternalMessageInfo
+
+type ResetUsbResponse struct {
+	Output               string   `protobuf:"bytes,1,opt,name=output,proto3" json:"output,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ResetUsbResponse) Reset()         { *m = ResetUsbResponse{} }
+func (m *ResetUsbResponse) String() string { return proto.CompactTextString(m) }
+func (*ResetUsbResponse) ProtoMessage()    {}
+func (*ResetUsbResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_protocol_993f1e78bb12a8bd, []int{8}
+}
+func (m *ResetUsbResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResetUsbResponse.Unmarshal(m, b)
+}
+func (m *ResetUsbResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResetUsbResponse.Marshal(b, m, deterministic)
+}
+func (dst *ResetUsbResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResetUsbResponse.Merge(dst, src)
+}
+func (m *ResetUsbResponse) XXX_Size() int {
+	return xxx_messageInfo_ResetUsbResponse.Size(m)
+}
+func (m *ResetUsbResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResetUsbResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResetUsbResponse proto.InternalMessageInfo
+
+func (m *ResetUsbResponse) GetOutput() string {
+	if m != nil {
+		return m.Output
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*ControllerInfo)(nil), "proto.ControllerInfo")
 	proto.RegisterType((*ControllerListRequest)(nil), "proto.ControllerListRequest")
@@ -305,6 +376,8 @@ func init() {
 	proto.RegisterType((*ReadControllerOutputResponse)(nil), "proto.ReadControllerOutputResponse")
 	proto.RegisterType((*FlashControllerRequest)(nil), "proto.FlashControllerRequest")
 	proto.RegisterType((*FlashControllerResponse)(nil), "proto.FlashControllerResponse")
+	proto.RegisterType((*ResetUsbRequest)(nil), "proto.ResetUsbRequest")
+	proto.RegisterType((*ResetUsbResponse)(nil), "proto.ResetUsbResponse")
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -324,6 +397,7 @@ type NervoServiceClient interface {
 	FlashController(ctx context.Context, in *FlashControllerRequest, opts ...grpc.CallOption) (*FlashControllerResponse, error)
 	ReadControllerOutputContinuously(ctx context.Context, in *ReadControllerOutputRequest, opts ...grpc.CallOption) (NervoService_ReadControllerOutputContinuouslyClient, error)
 	SetControllerName(ctx context.Context, in *ControllerInfo, opts ...grpc.CallOption) (*ControllerListResponse, error)
+	ResetUsb(ctx context.Context, in *ResetUsbRequest, opts ...grpc.CallOption) (*ResetUsbResponse, error)
 }
 
 type nervoServiceClient struct {
@@ -402,6 +476,15 @@ func (c *nervoServiceClient) SetControllerName(ctx context.Context, in *Controll
 	return out, nil
 }
 
+func (c *nervoServiceClient) ResetUsb(ctx context.Context, in *ResetUsbRequest, opts ...grpc.CallOption) (*ResetUsbResponse, error) {
+	out := new(ResetUsbResponse)
+	err := c.cc.Invoke(ctx, "/proto.NervoService/ResetUsb", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NervoServiceServer is the server API for NervoService service.
 type NervoServiceServer interface {
 	ListControllers(context.Context, *ControllerListRequest) (*ControllerListResponse, error)
@@ -409,6 +492,7 @@ type NervoServiceServer interface {
 	FlashController(context.Context, *FlashControllerRequest) (*FlashControllerResponse, error)
 	ReadControllerOutputContinuously(*ReadControllerOutputRequest, NervoService_ReadControllerOutputContinuouslyServer) error
 	SetControllerName(context.Context, *ControllerInfo) (*ControllerListResponse, error)
+	ResetUsb(context.Context, *ResetUsbRequest) (*ResetUsbResponse, error)
 }
 
 func RegisterNervoServiceServer(s *grpc.Server, srv NervoServiceServer) {
@@ -508,6 +592,24 @@ func _NervoService_SetControllerName_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NervoService_ResetUsb_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ResetUsbRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NervoServiceServer).ResetUsb(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.NervoService/ResetUsb",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NervoServiceServer).ResetUsb(ctx, req.(*ResetUsbRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _NervoService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.NervoService",
 	HandlerType: (*NervoServiceServer)(nil),
@@ -528,6 +630,10 @@ var _NervoService_serviceDesc = grpc.ServiceDesc{
 			MethodName: "SetControllerName",
 			Handler:    _NervoService_SetControllerName_Handler,
 		},
+		{
+			MethodName: "ResetUsb",
+			Handler:    _NervoService_ResetUsb_Handler,
+		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
@@ -539,31 +645,34 @@ var _NervoService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "proto/protocol.proto",
 }
 
-func init() { proto.RegisterFile("proto/protocol.proto", fileDescriptor_protocol_d110b2ab1227f587) }
+func init() { proto.RegisterFile("proto/protocol.proto", fileDescriptor_protocol_993f1e78bb12a8bd) }
 
-var fileDescriptor_protocol_d110b2ab1227f587 = []byte{
-	// 367 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x52, 0x4d, 0x6b, 0xea, 0x40,
-	0x14, 0x25, 0xcf, 0xf7, 0xe4, 0xf5, 0x56, 0xd4, 0x0e, 0x7e, 0x91, 0xda, 0x22, 0xd3, 0x8d, 0x2b,
-	0x6b, 0x2d, 0x74, 0x2d, 0x08, 0x82, 0x50, 0x54, 0xe2, 0xae, 0x9b, 0x60, 0xd3, 0x2b, 0x06, 0xc6,
-	0x99, 0x34, 0x33, 0x11, 0xfb, 0x1b, 0xfb, 0xa7, 0x4a, 0xc6, 0xd1, 0xf8, 0x11, 0x2d, 0x94, 0x6e,
-	0x74, 0xee, 0x3d, 0x33, 0xf7, 0x9c, 0x7b, 0x4e, 0xa0, 0x14, 0x84, 0x42, 0x89, 0x7b, 0xfd, 0xeb,
-	0x09, 0xd6, 0xd2, 0x07, 0xf2, 0x4f, 0xff, 0xd1, 0x2e, 0xe4, 0x7b, 0x82, 0xab, 0x50, 0x30, 0x86,
-	0xe1, 0x80, 0xcf, 0x04, 0xb1, 0xe1, 0x7f, 0x20, 0x42, 0x35, 0x9c, 0x2e, 0xb0, 0x66, 0x35, 0xac,
-	0xe6, 0x85, 0xb3, 0xad, 0x09, 0x81, 0xbf, 0x3c, 0xee, 0xff, 0xd1, 0x7d, 0x7d, 0xa6, 0x55, 0x28,
-	0x27, 0x13, 0x9e, 0x7d, 0xa9, 0x1c, 0x7c, 0x8f, 0x50, 0x2a, 0xfa, 0x02, 0x95, 0x43, 0x40, 0x06,
-	0x82, 0x4b, 0x24, 0x5d, 0x28, 0x7a, 0x5b, 0xc4, 0xf5, 0xf9, 0x4c, 0xc8, 0x9a, 0xd5, 0xc8, 0x34,
-	0x2f, 0x3b, 0xe5, 0xb5, 0xba, 0xd6, 0xbe, 0x26, 0xa7, 0xe0, 0xed, 0xd5, 0x92, 0x8e, 0xe0, 0xda,
-	0xc1, 0xe9, 0x5b, 0x72, 0x6d, 0x14, 0xa9, 0x20, 0xda, 0x50, 0x93, 0x36, 0x94, 0x76, 0x08, 0x62,
-	0xf9, 0x2e, 0x4f, 0xf6, 0x21, 0x09, 0x36, 0x36, 0x9b, 0xd1, 0x27, 0xa8, 0xa7, 0x0f, 0x34, 0x92,
-	0x2b, 0x90, 0x15, 0xba, 0x63, 0x66, 0x98, 0x8a, 0x2a, 0xa8, 0xf4, 0xd9, 0x54, 0xce, 0x93, 0x87,
-	0x3f, 0xd6, 0x40, 0x9a, 0x50, 0x9c, 0xe3, 0xca, 0x9d, 0xf9, 0x0c, 0xdd, 0x18, 0x46, 0xae, 0xb4,
-	0xd3, 0x39, 0x27, 0x3f, 0xc7, 0x55, 0xdf, 0x67, 0xd8, 0x5b, 0x77, 0xe9, 0x03, 0x54, 0x8f, 0x58,
-	0xcf, 0x0b, 0xed, 0x7c, 0x66, 0x20, 0x37, 0xc4, 0x70, 0x29, 0x26, 0x18, 0x2e, 0x7d, 0x0f, 0xc9,
-	0x10, 0x0a, 0x71, 0x28, 0xc9, 0x08, 0x49, 0xea, 0x47, 0xee, 0xef, 0xe4, 0x69, 0xdf, 0x9c, 0x40,
-	0x0d, 0xb1, 0x0b, 0xa5, 0x34, 0x07, 0x09, 0x35, 0xcf, 0xce, 0xe4, 0x65, 0xdf, 0x9d, 0xbd, 0x63,
-	0x08, 0xc6, 0x50, 0x38, 0x58, 0x9a, 0x6c, 0x24, 0xa5, 0x47, 0x60, 0xdf, 0x9e, 0x82, 0xcd, 0xc4,
-	0x05, 0x34, 0xd2, 0x18, 0xe3, 0xda, 0xe7, 0x91, 0x88, 0x24, 0xfb, 0xf8, 0x35, 0xf9, 0x6d, 0x8b,
-	0x0c, 0xe0, 0x6a, 0x82, 0x3b, 0x86, 0xeb, 0xd0, 0xd3, 0xbf, 0xf8, 0x6f, 0xcc, 0x7e, 0xcd, 0x6a,
-	0xf4, 0xf1, 0x2b, 0x00, 0x00, 0xff, 0xff, 0x6f, 0x37, 0xe2, 0x32, 0xdc, 0x03, 0x00, 0x00,
+var fileDescriptor_protocol_993f1e78bb12a8bd = []byte{
+	// 404 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x53, 0xcf, 0xcb, 0xda, 0x40,
+	0x10, 0x25, 0xad, 0x15, 0x3b, 0x15, 0xa3, 0x8b, 0x46, 0x49, 0x6d, 0x91, 0xed, 0x45, 0x7a, 0xb0,
+	0xd6, 0x42, 0x2f, 0xbd, 0x08, 0x82, 0x20, 0x14, 0x95, 0x48, 0x2f, 0xbd, 0x04, 0x4d, 0x47, 0x0c,
+	0xc4, 0xdd, 0x34, 0xbb, 0x11, 0xfb, 0x1f, 0xf4, 0xcf, 0xfe, 0xc8, 0xba, 0x31, 0xfe, 0x88, 0x0a,
+	0x1f, 0xdf, 0x45, 0x77, 0xde, 0xec, 0xcc, 0x7b, 0x3b, 0x6f, 0x02, 0xf5, 0x30, 0xe2, 0x92, 0x7f,
+	0x51, 0xbf, 0x1e, 0x0f, 0x7a, 0xea, 0x40, 0xde, 0xa8, 0x3f, 0x3a, 0x84, 0xca, 0x88, 0x33, 0x19,
+	0xf1, 0x20, 0xc0, 0x68, 0xc2, 0xd6, 0x9c, 0xd8, 0x50, 0x0a, 0x79, 0x24, 0xa7, 0xcb, 0x2d, 0xb6,
+	0x8c, 0x8e, 0xd1, 0x7d, 0xeb, 0x1c, 0x63, 0x42, 0xa0, 0xc0, 0x12, 0xfc, 0x95, 0xc2, 0xd5, 0x99,
+	0x36, 0xa1, 0x91, 0x75, 0xf8, 0xe9, 0x0b, 0xe9, 0xe0, 0xdf, 0x18, 0x85, 0xa4, 0xbf, 0xc1, 0xba,
+	0x4c, 0x88, 0x90, 0x33, 0x81, 0x64, 0x08, 0x55, 0xef, 0x98, 0x71, 0x7d, 0xb6, 0xe6, 0xa2, 0x65,
+	0x74, 0x5e, 0x77, 0xdf, 0x0d, 0x1a, 0x07, 0x75, 0xbd, 0x73, 0x4d, 0x8e, 0xe9, 0x9d, 0xc5, 0x82,
+	0xce, 0xe0, 0xbd, 0x83, 0xcb, 0x3f, 0xd9, 0xb5, 0x59, 0x2c, 0xc3, 0x38, 0xa5, 0x26, 0x7d, 0xa8,
+	0x9f, 0x10, 0x24, 0xf2, 0x5d, 0x96, 0xbd, 0x87, 0x64, 0xb9, 0xb9, 0x7e, 0x19, 0xfd, 0x0e, 0xed,
+	0xfc, 0x86, 0x5a, 0xb2, 0x05, 0x45, 0xae, 0x10, 0xdd, 0x43, 0x47, 0x54, 0x82, 0x35, 0x0e, 0x96,
+	0x62, 0x93, 0x15, 0x3e, 0x5b, 0x03, 0xe9, 0x42, 0x75, 0x83, 0x7b, 0x77, 0xed, 0x07, 0xe8, 0x26,
+	0x69, 0x64, 0x52, 0x4d, 0xba, 0xec, 0x54, 0x36, 0xb8, 0x1f, 0xfb, 0x01, 0x8e, 0x0e, 0x28, 0xfd,
+	0x0a, 0xcd, 0x2b, 0xd6, 0x07, 0x42, 0x6b, 0x60, 0x3a, 0x28, 0x50, 0xfe, 0x12, 0xab, 0xd4, 0xa0,
+	0xcf, 0x50, 0xcd, 0xa0, 0xfb, 0xe5, 0x83, 0xff, 0x05, 0x28, 0x4f, 0x31, 0xda, 0xf1, 0x05, 0x46,
+	0x3b, 0xdf, 0x43, 0x32, 0x05, 0x33, 0xf1, 0x34, 0x53, 0x20, 0x48, 0xfb, 0xca, 0xbc, 0x93, 0x75,
+	0xb0, 0x3f, 0xdc, 0xc8, 0x6a, 0x62, 0x17, 0xea, 0x79, 0x06, 0x10, 0xaa, 0xcb, 0xee, 0xd8, 0x6d,
+	0x7f, 0xba, 0x7b, 0x47, 0x13, 0xcc, 0xc1, 0xbc, 0x98, 0x19, 0x49, 0x25, 0xe5, 0x3b, 0x68, 0x7f,
+	0xbc, 0x95, 0xd6, 0x1d, 0xb7, 0xd0, 0xc9, 0x63, 0x4c, 0x62, 0x9f, 0xc5, 0x3c, 0x16, 0xc1, 0xbf,
+	0x17, 0x93, 0xdf, 0x37, 0xc8, 0x04, 0x6a, 0x0b, 0x3c, 0x19, 0xb8, 0xda, 0x99, 0xfc, 0x0f, 0xe6,
+	0xd1, 0xb0, 0x7f, 0x40, 0x29, 0x75, 0x9e, 0x58, 0x47, 0xf6, 0xb3, 0xed, 0xb0, 0x9b, 0x57, 0xf8,
+	0xa1, 0x78, 0x55, 0x54, 0xf8, 0xb7, 0xa7, 0x00, 0x00, 0x00, 0xff, 0xff, 0xe1, 0xdb, 0x70, 0xd9,
+	0x58, 0x04, 0x00, 0x00,
 }

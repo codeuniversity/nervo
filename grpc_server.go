@@ -115,3 +115,16 @@ func (s *GrpcServer) SetControllerName(_ context.Context, request *proto.Control
 
 	return &proto.ControllerListResponse{ControllerInfos: infos}, nil
 }
+
+// ResetUsb for the grpc NervoService
+func (s *GrpcServer) ResetUsb(context.Context, *proto.ResetUsbRequest) (*proto.ResetUsbResponse, error) {
+	output, err := resetUsb()
+	if err != nil {
+		fmt.Println("resetting failed", err)
+		return nil, err
+	}
+
+	return &proto.ResetUsbResponse{
+		Output: output,
+	}, nil
+}

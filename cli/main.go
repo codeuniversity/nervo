@@ -32,6 +32,16 @@ func main() {
 	cmd := chooseBetweenCommands()
 
 	c := proto.NewNervoServiceClient(conn)
+	if cmd == "reset" {
+		output, err := c.ResetUsb(context.Background(), &proto.ResetUsbRequest{})
+		fmt.Println(output)
+		if err != nil {
+			panic(err)
+		}
+
+		return
+	}
+
 	response, err := c.ListControllers(context.Background(), &proto.ControllerListRequest{})
 	if err != nil {
 		panic(err)
@@ -124,10 +134,23 @@ func flashController(client proto.NervoServiceClient, controllerName string) {
 	}
 
 	response, err := client.FlashController(context.Background(), &proto.FlashControllerRequest{ControllerPortName: controllerName, HexFileContent: content})
-	if err != nil {
-		panic(err)
-	}
 	fmt.Println(response.Output)
+	if err != nil {
+		fmt.Println("Encountered error when flashing: ", err)
+		fmt.Println("... resetting usb devices...")
+		output, err := client.ResetUsb(context.Background(), &proto.ResetUsbRequest{})
+		fmt.Println(output)
+		if err != nil {
+			fmt.Println("couldn't reset usb: ", err)
+		} else {
+			fmt.Println("usb successfully reset, retrying")
+			response, err := client.FlashController(context.Background(), &proto.FlashControllerRequest{ControllerPortName: controllerName, HexFileContent: content})
+			fmt.Println(response.Output)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
 }
 
 func askForControllerName(response *proto.ControllerListResponse) string {
@@ -168,6 +191,7 @@ func chooseBetweenCommands() string {
 		"read once",
 		"read continuously",
 		"set name",
+		"reset",
 	}
 	s := promptui.Select{
 		Label: "What do you want to do?",
