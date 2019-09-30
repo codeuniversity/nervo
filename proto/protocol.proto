@@ -4,6 +4,7 @@ package proto;
 
 message ControllerInfo{
   string portName = 1;
+  string name = 2;
 }
 
 message ControllerListRequest {}
@@ -20,8 +21,26 @@ message ReadControllerOutputResponse{
   string output = 1;
 }
 
+message FlashControllerRequest {
+  string controller_port_name = 1;
+  bytes hex_file_content = 2;
+}
+
+message FlashControllerResponse{
+  string output = 1;
+}
+
+message ResetUsbRequest{}
+
+message ResetUsbResponse{
+  string output = 1;
+}
 
 service NervoService {
   rpc ListControllers(ControllerListRequest) returns (ControllerListResponse);
   rpc ReadControllerOutput(ReadControllerOutputRequest) returns (ReadControllerOutputResponse);
+  rpc FlashController(FlashControllerRequest) returns (FlashControllerResponse);
+  rpc ReadControllerOutputContinuously(ReadControllerOutputRequest)returns(stream ReadControllerOutputResponse);
+  rpc SetControllerName(ControllerInfo) returns (ControllerListResponse);
+  rpc ResetUsb(ResetUsbRequest) returns (ResetUsbResponse);
 }

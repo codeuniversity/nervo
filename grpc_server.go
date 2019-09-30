@@ -2,6 +2,7 @@ package nervo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -42,11 +43,12 @@ func (s *GrpcServer) Listen() {
 
 // ListControllers for the grpc NervoService
 func (s *GrpcServer) ListControllers(_ context.Context, _ *proto.ControllerListRequest) (*proto.ControllerListResponse, error) {
-	portNames := s.Manager.listControllers()
+	controllerInfos := s.Manager.listControllers()
 	infos := []*proto.ControllerInfo{}
-	for _, name := range portNames {
+	for _, info := range controllerInfos {
 		infos = append(infos, &proto.ControllerInfo{
-			PortName: name,
+			PortName: info.portName,
+			Name:     info.name,
 		})
 	}
 
@@ -58,4 +60,71 @@ func (s *GrpcServer) ReadControllerOutput(_ context.Context, request *proto.Read
 	output := s.Manager.readFromController(request.ControllerPortName)
 
 	return &proto.ReadControllerOutputResponse{Output: output}, nil
+}
+
+// FlashController for the grpc NervoService
+func (s *GrpcServer) FlashController(_ context.Context, request *proto.FlashControllerRequest) (*proto.FlashControllerResponse, error) {
+	answer := s.Manager.flashController(request.ControllerPortName, request.HexFileContent)
+	return &proto.FlashControllerResponse{Output: answer.Output}, answer.Error
+}
+
+// ReadControllerOutputContinuously for the grpc NervoService
+func (s *GrpcServer) ReadControllerOutputContinuously(request *proto.ReadControllerOutputRequest, stream proto.NervoService_ReadControllerOutputContinuouslyServer) error {
+
+	notifierChan := s.Manager.readContinuouslyFromController(request.ControllerPortName)
+
+	if notifierChan == nil {
+		return errors.New("no controller found for " + request.ControllerPortName)
+	}
+
+	output := s.Manager.readFromController(request.ControllerPortName)
+	if len(output) > 0 {
+		err := stream.Send(&proto.ReadControllerOutputResponse{Output: output})
+		if err != nil {
+			fmt.Println(err)
+			s.Manager.stopReadingFromController(request.ControllerPortName)
+			return err
+		}
+	}
+
+	for newOutput := range notifierChan {
+		if len(newOutput) > 0 {
+			err := stream.Send(&proto.ReadControllerOutputResponse{Output: string(newOutput)})
+			if err != nil {
+				fmt.Println(err)
+				s.Manager.stopReadingFromController(request.ControllerPortName)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// SetControllerName for the grpc NervoService
+func (s *GrpcServer) SetControllerName(_ context.Context, request *proto.ControllerInfo) (*proto.ControllerListResponse, error) {
+	s.Manager.setControllerName(request.PortName, request.Name)
+
+	controllerInfos := s.Manager.listControllers()
+	infos := []*proto.ControllerInfo{}
+	for _, info := range controllerInfos {
+		infos = append(infos, &proto.ControllerInfo{
+			PortName: info.portName,
+			Name:     info.name,
+		})
+	}
+
+	return &proto.ControllerListResponse{ControllerInfos: infos}, nil
+}
+
+// ResetUsb for the grpc NervoService
+func (s *GrpcServer) ResetUsb(context.Context, *proto.ResetUsbRequest) (*proto.ResetUsbResponse, error) {
+	output, err := resetUsb()
+	if err != nil {
+		fmt.Println("resetting failed", err)
+		return nil, err
+	}
+
+	return &proto.ResetUsbResponse{
+		Output: output,
+	}, nil
 }

@@ -4,9 +4,12 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"sync"
+	"time"
 
 	"github.com/tarm/serial"
 )
@@ -17,33 +20,49 @@ const (
 )
 
 type controller struct {
-	SerialPortPath string
-	serialPort     *serial.Port
-	outputbuffer   *bytes.Buffer
-	outputMutex    *sync.Mutex
-	Error          error
+	SerialPortPath    string
+	Name              string
+	serialPort        *serial.Port
+	outputbuffer      *bytes.Buffer
+	outputMutex       *sync.Mutex
+	readNotifierChan  chan []byte
+	readNotifierMutex *sync.Mutex
+	Error             error
 }
 
 func newController(serialPort string) *controller {
 	return &controller{
-		SerialPortPath: serialPort,
-		outputbuffer:   &bytes.Buffer{},
-		outputMutex:    &sync.Mutex{},
+		SerialPortPath:    serialPort,
+		outputbuffer:      &bytes.Buffer{},
+		outputMutex:       &sync.Mutex{},
+		readNotifierMutex: &sync.Mutex{},
 	}
 }
 
-func (c *controller) flash(hexFilePath string) error {
+func (c *controller) flash(hexFileContent []byte) (output string, err error) {
 	c.closeSerial()
+	c.clearNotifier()
+	time.Sleep(time.Millisecond * 200)
+	c.Error = nil
+	err = withTimeOut(time.Second*10, func() {
+		hexFilePath, hexfileCleanup := writeHexFileToTemporaryPath(hexFileContent)
+		defer hexfileCleanup()
 
-	cmd := exec.Command(
-		"sh",
-		"-c",
-		fmt.Sprintf("avrdude -p m328p -c arduino -P %s -b 115200 -U flash:w:%s", c.SerialPortPath, hexFilePath),
-	)
+		cmd := exec.Command(
+			"sh",
+			"-c",
+			fmt.Sprintf("avrdude -p m328p -c arduino -P %s -b 115200 -U flash:w:%s", c.SerialPortPath, hexFilePath),
+		)
 
-	out, err := cmd.CombinedOutput()
-	fmt.Println(string(out))
-	return err
+		out, execErr := cmd.CombinedOutput()
+		output = string(out)
+		err = execErr
+	})
+	if err != nil {
+		return "", err
+	}
+	go c.readFromSerial()
+	return
 }
 
 func (c *controller) readFromSerial() error {
@@ -61,15 +80,25 @@ func (c *controller) readFromSerial() error {
 		l, err = r.ReadString('\n')
 		if err != nil {
 			c.Error = err
+			c.clearNotifier()
+			c.closeSerial()
 			log.Println(c.SerialPortPath, err)
 			break
 		}
-		c.appendToCappedOutputBuffer([]byte(l))
+		c.notifyOrAppendToCappedOutputBuffer([]byte(l))
 	}
 	return err
 }
 
-func (c *controller) appendToCappedOutputBuffer(b []byte) {
+func (c *controller) notifyOrAppendToCappedOutputBuffer(b []byte) {
+	c.readNotifierMutex.Lock()
+	defer c.readNotifierMutex.Unlock()
+
+	if c.readNotifierChan != nil {
+		c.readNotifierChan <- b
+		return
+	}
+
 	c.outputMutex.Lock()
 	defer c.outputMutex.Unlock()
 
@@ -90,9 +119,49 @@ func (c *controller) useOutput(f func(outputBuffer *bytes.Buffer)) {
 	f(c.outputbuffer)
 }
 
+func (c *controller) notifyOnRead() chan []byte {
+	c.clearNotifier()
+
+	c.readNotifierMutex.Lock()
+	defer c.readNotifierMutex.Unlock()
+	notifierChan := make(chan []byte, 10)
+	c.readNotifierChan = notifierChan
+
+	return notifierChan
+}
+
+func (c *controller) clearNotifier() {
+	c.readNotifierMutex.Lock()
+	defer c.readNotifierMutex.Unlock()
+	if c.readNotifierChan != nil {
+		close(c.readNotifierChan)
+		c.readNotifierChan = nil
+	}
+}
+
 func (c *controller) closeSerial() {
+	c.outputMutex.Lock()
+	defer c.outputMutex.Unlock()
 	if c.serialPort != nil {
 		c.serialPort.Close()
 		c.serialPort = nil
 	}
+}
+
+func writeHexFileToTemporaryPath(hexFileContent []byte) (path string, cleanup func()) {
+	tmpfile, err := ioutil.TempFile("", "flashing_*.hex")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if _, err := tmpfile.Write(hexFileContent); err != nil {
+		log.Fatal(err)
+	}
+	if err := tmpfile.Close(); err != nil {
+		log.Fatal(err)
+	}
+	cleanupFunc := func() {
+		os.Remove(tmpfile.Name())
+	}
+	return tmpfile.Name(), cleanupFunc
 }

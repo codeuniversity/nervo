@@ -2,17 +2,52 @@ package nervo
 
 import (
 	"bytes"
+	"errors"
 	"log"
 	"time"
 )
 
 type listControllersMessage struct {
-	answerChan chan []string
+	answerChan chan []controllerInfo
+}
+
+type controllerInfo struct {
+	name     string
+	portName string
 }
 
 type readOutputMessage struct {
 	portName   string
 	answerChan chan string
+}
+
+type flashAnswer struct {
+	Error  error
+	Output string
+}
+
+type flashMessage struct {
+	portName       string
+	hexFileContent []byte
+	answerChan     chan flashAnswer
+}
+
+type readContinuousMessage struct {
+	portName   string
+	answerChan chan chan []byte
+}
+
+type stopReadingMessage struct {
+	portName string
+}
+
+type nameControllerMessage struct {
+	portName string
+	name     string
+}
+
+type pingMessage struct {
+	pongChan chan struct{}
 }
 
 // Manager controls all interactions with the controllers from outside
@@ -21,6 +56,11 @@ type Manager struct {
 	currentPortsChan    chan []string
 	listControllersChan chan listControllersMessage
 	readOutputChan      chan readOutputMessage
+	flashChan           chan flashMessage
+	readContinuousChan  chan readContinuousMessage
+	stopReadingChan     chan stopReadingMessage
+	nameControllerChan  chan nameControllerMessage
+	pingChan            chan pingMessage
 }
 
 // NewManager retuns a Manager that is ready for use
@@ -29,9 +69,18 @@ func NewManager() *Manager {
 		currentPortsChan:    make(chan []string),
 		listControllersChan: make(chan listControllersMessage),
 		readOutputChan:      make(chan readOutputMessage),
+		flashChan:           make(chan flashMessage),
+		readContinuousChan:  make(chan readContinuousMessage),
+		stopReadingChan:     make(chan stopReadingMessage),
+		nameControllerChan:  make(chan nameControllerMessage),
+		pingChan:            make(chan pingMessage),
 	}
+
 	go m.lookForNewPorts()
 	go m.manageControllers()
+	go watchManagerHealth(m, func() {
+		panic("I don't know, just kill him I guess")
+	})
 	return m
 }
 
@@ -43,11 +92,11 @@ func (m *Manager) manageControllers() {
 			m.handleCurrentPorts(currentPorts)
 			break
 		case message := <-m.listControllersChan:
-			names := []string{}
+			infos := []controllerInfo{}
 			for _, controller := range m.controllers {
-				names = append(names, controller.SerialPortPath)
+				infos = append(infos, controllerInfo{portName: controller.SerialPortPath, name: controller.Name})
 			}
-			message.answerChan <- names
+			message.answerChan <- infos
 			break
 
 		case message := <-m.readOutputChan:
@@ -65,12 +114,45 @@ func (m *Manager) manageControllers() {
 				message.answerChan <- "no controller found at " + message.portName
 			}
 			break
+		case message := <-m.flashChan:
+			controller := m.controllerForPort(message.portName)
+			if controller != nil {
+				output, err := controller.flash(message.hexFileContent)
+				message.answerChan <- flashAnswer{Error: err, Output: output}
+			} else {
+				message.answerChan <- flashAnswer{Error: errors.New("no controller found at " + message.portName)}
+			}
+			break
+		case message := <-m.readContinuousChan:
+			controller := m.controllerForPort(message.portName)
+			if controller != nil {
+				notifierChan := controller.notifyOnRead()
+				message.answerChan <- notifierChan
+			} else {
+				message.answerChan <- nil
+			}
+			break
+		case message := <-m.stopReadingChan:
+			controller := m.controllerForPort(message.portName)
+			if controller != nil {
+				controller.clearNotifier()
+			}
+			break
+		case message := <-m.nameControllerChan:
+			controller := m.controllerForPort(message.portName)
+			if controller != nil {
+				controller.Name = message.name
+			}
+			break
+		case m := <-m.pingChan:
+			m.pongChan <- struct{}{}
+			break
 		}
 	}
 }
 
-func (m *Manager) listControllers() []string {
-	answerChan := make(chan []string)
+func (m *Manager) listControllers() []controllerInfo {
+	answerChan := make(chan []controllerInfo)
 	message := listControllersMessage{answerChan: answerChan}
 	m.listControllersChan <- message
 	return <-answerChan
@@ -81,7 +163,30 @@ func (m *Manager) readFromController(portName string) string {
 	message := readOutputMessage{answerChan: answerChan, portName: portName}
 	m.readOutputChan <- message
 	return <-answerChan
+}
 
+func (m *Manager) flashController(portName string, hexFileContent []byte) flashAnswer {
+	answerChan := make(chan flashAnswer)
+	message := flashMessage{answerChan: answerChan, portName: portName, hexFileContent: hexFileContent}
+	m.flashChan <- message
+	return <-answerChan
+}
+
+func (m *Manager) readContinuouslyFromController(portName string) chan []byte {
+	answerChan := make(chan chan []byte)
+	message := readContinuousMessage{answerChan: answerChan, portName: portName}
+	m.readContinuousChan <- message
+	return <-answerChan
+}
+
+func (m *Manager) stopReadingFromController(portName string) {
+	message := stopReadingMessage{portName: portName}
+	m.stopReadingChan <- message
+}
+
+func (m *Manager) setControllerName(portName string, name string) {
+	message := nameControllerMessage{portName: portName, name: name}
+	m.nameControllerChan <- message
 }
 
 func (m *Manager) controllerForPort(portName string) *controller {
@@ -105,6 +210,16 @@ func (m *Manager) lookForNewPorts() {
 
 		m.currentPortsChan <- ports
 	}
+}
+
+func (m *Manager) pingWithTimeout(timeout time.Duration) error {
+	return withTimeOut(timeout, func() {
+		pongChan := make(chan struct{})
+		m.pingChan <- pingMessage{
+			pongChan: pongChan,
+		}
+		<-pongChan
+	})
 }
 
 func (m *Manager) handleCurrentPorts(currentPorts []string) {
