@@ -66,6 +66,13 @@ func (c *controller) flash(hexFileContent []byte) (output string, err error) {
 }
 
 func (c *controller) readFromSerial() error {
+	handleReadErr := func(err error) {
+		c.Error = err
+		c.clearNotifier()
+		c.closeSerial()
+		log.Println(c.SerialPortPath, err)
+	}
+
 	conf := &serial.Config{Name: c.SerialPortPath, Baud: 9600}
 	s, err := serial.OpenPort(conf)
 	if err != nil {
@@ -75,14 +82,22 @@ func (c *controller) readFromSerial() error {
 	c.serialPort = s
 	r := bufio.NewReader(c.serialPort)
 
+	firstLine, err := r.ReadString('\n')
+	if err != nil {
+		handleReadErr(err)
+		return err
+	}
+	if name, ok := ParseAnnounceMessage(firstLine); ok {
+		c.Name = name
+	} else {
+		c.notifyOrAppendToCappedOutputBuffer([]byte(firstLine))
+	}
+
 	for {
 		var l string
 		l, err = r.ReadString('\n')
 		if err != nil {
-			c.Error = err
-			c.clearNotifier()
-			c.closeSerial()
-			log.Println(c.SerialPortPath, err)
+			handleReadErr(err)
 			break
 		}
 		c.notifyOrAppendToCappedOutputBuffer([]byte(l))
