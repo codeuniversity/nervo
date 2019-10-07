@@ -7,10 +7,6 @@ import (
 	"time"
 )
 
-type listControllersMessage struct {
-	answerChan chan []controllerInfo
-}
-
 type controllerInfo struct {
 	name     string
 	portName string
@@ -60,7 +56,6 @@ type writeToControllerMessage struct {
 type Manager struct {
 	controllers           []*controller
 	currentPortsChan      chan []string
-	listControllersChan   chan listControllersMessage
 	readOutputChan        chan readOutputMessage
 	flashChan             chan flashMessage
 	readContinuousChan    chan readContinuousMessage
@@ -74,7 +69,6 @@ type Manager struct {
 func NewManager() *Manager {
 	m := &Manager{
 		currentPortsChan:      make(chan []string),
-		listControllersChan:   make(chan listControllersMessage),
 		readOutputChan:        make(chan readOutputMessage),
 		flashChan:             make(chan flashMessage),
 		readContinuousChan:    make(chan readContinuousMessage),
@@ -98,14 +92,6 @@ func (m *Manager) manageControllers() {
 		case currentPorts := <-m.currentPortsChan:
 			m.handleCurrentPorts(currentPorts)
 			break
-		case message := <-m.listControllersChan:
-			infos := []controllerInfo{}
-			for _, controller := range m.controllers {
-				infos = append(infos, controllerInfo{portName: controller.SerialPortPath, name: controller.Name})
-			}
-			message.answerChan <- infos
-			break
-
 		case message := <-m.readOutputChan:
 			controller := m.controllerForPort(message.portName)
 			if controller != nil {
@@ -167,10 +153,11 @@ func (m *Manager) manageControllers() {
 }
 
 func (m *Manager) listControllers() []controllerInfo {
-	answerChan := make(chan []controllerInfo)
-	message := listControllersMessage{answerChan: answerChan}
-	m.listControllersChan <- message
-	return <-answerChan
+	infos := []controllerInfo{}
+	for _, controller := range m.controllers {
+		infos = append(infos, controllerInfo{portName: controller.SerialPortPath, name: controller.Name})
+	}
+	return infos
 }
 
 func (m *Manager) readFromController(portName string) string {
