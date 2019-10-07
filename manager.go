@@ -52,30 +52,43 @@ type writeToControllerMessage struct {
 	doneChan chan error
 }
 
+type writeToControllerContinuouslyAnswerMessage struct {
+	stopChan chan closeContiniousWriterMessage
+	doneChan chan error
+	err      error
+}
+type writeToControllerContinuouslyMessage struct {
+	portName   string
+	writeChan  chan []byte
+	answerChan chan writeToControllerContinuouslyAnswerMessage
+}
+
 // Manager controls all interactions with the controllers from outside
 type Manager struct {
-	controllers           []*controller
-	currentPortsChan      chan []string
-	readOutputChan        chan readOutputMessage
-	flashChan             chan flashMessage
-	readContinuousChan    chan readContinuousMessage
-	stopReadingChan       chan stopReadingMessage
-	nameControllerChan    chan nameControllerMessage
-	pingChan              chan pingMessage
-	writeToControllerChan chan writeToControllerMessage
+	controllers                       []*controller
+	currentPortsChan                  chan []string
+	readOutputChan                    chan readOutputMessage
+	flashChan                         chan flashMessage
+	readContinuousChan                chan readContinuousMessage
+	stopReadingChan                   chan stopReadingMessage
+	nameControllerChan                chan nameControllerMessage
+	pingChan                          chan pingMessage
+	writeToControllerChan             chan writeToControllerMessage
+	writeToControllerContinuouslyChan chan writeToControllerContinuouslyMessage
 }
 
 // NewManager retuns a Manager that is ready for use
 func NewManager() *Manager {
 	m := &Manager{
-		currentPortsChan:      make(chan []string),
-		readOutputChan:        make(chan readOutputMessage),
-		flashChan:             make(chan flashMessage),
-		readContinuousChan:    make(chan readContinuousMessage),
-		stopReadingChan:       make(chan stopReadingMessage),
-		nameControllerChan:    make(chan nameControllerMessage),
-		pingChan:              make(chan pingMessage),
-		writeToControllerChan: make(chan writeToControllerMessage),
+		currentPortsChan:                  make(chan []string),
+		readOutputChan:                    make(chan readOutputMessage),
+		flashChan:                         make(chan flashMessage),
+		readContinuousChan:                make(chan readContinuousMessage),
+		stopReadingChan:                   make(chan stopReadingMessage),
+		nameControllerChan:                make(chan nameControllerMessage),
+		pingChan:                          make(chan pingMessage),
+		writeToControllerChan:             make(chan writeToControllerMessage),
+		writeToControllerContinuouslyChan: make(chan writeToControllerContinuouslyMessage),
 	}
 
 	go m.lookForNewPorts()
@@ -145,6 +158,20 @@ func (m *Manager) manageControllers() {
 				message.doneChan <- errors.New("no controller found at " + message.portName)
 			}
 			break
+		case message := <-m.writeToControllerContinuouslyChan:
+			controller := m.controllerForPort(message.portName)
+			if controller != nil {
+				stopChan, doneChan := controller.continiouslyWrite(message.writeChan)
+				message.answerChan <- writeToControllerContinuouslyAnswerMessage{
+					stopChan: stopChan,
+					doneChan: doneChan,
+				}
+			} else {
+				message.answerChan <- writeToControllerContinuouslyAnswerMessage{
+					err: errors.New("no controller found at " + message.portName),
+				}
+			}
+			break
 		case m := <-m.pingChan:
 			m.pongChan <- struct{}{}
 			break
@@ -191,6 +218,27 @@ func (m *Manager) setControllerName(portName string, name string) {
 	m.nameControllerChan <- message
 }
 
+func (m *Manager) writeToController(controllerPortName string, message []byte) error {
+	doneChan := make(chan error)
+	m.writeToControllerChan <- writeToControllerMessage{
+		portName: controllerPortName,
+		message:  message,
+		doneChan: doneChan,
+	}
+	return <-doneChan
+}
+
+func (m *Manager) writeToControllerContinuously(controllerPortName string, writeChan chan []byte) writeToControllerContinuouslyAnswerMessage {
+	answerChan := make(chan writeToControllerContinuouslyAnswerMessage)
+	m.writeToControllerContinuouslyChan <- writeToControllerContinuouslyMessage{
+		portName:   controllerPortName,
+		writeChan:  writeChan,
+		answerChan: answerChan,
+	}
+
+	return <-answerChan
+}
+
 func (m *Manager) controllerForPort(portName string) *controller {
 	for _, controller := range m.controllers {
 		if controller.SerialPortPath == portName {
@@ -222,16 +270,6 @@ func (m *Manager) pingWithTimeout(timeout time.Duration) error {
 		}
 		<-pongChan
 	})
-}
-
-func (m *Manager) writeToController(controllerPortName string, message []byte) error {
-	doneChan := make(chan error)
-	m.writeToControllerChan <- writeToControllerMessage{
-		portName: controllerPortName,
-		message:  message,
-		doneChan: doneChan,
-	}
-	return <-doneChan
 }
 
 func (m *Manager) handleCurrentPorts(currentPorts []string) {

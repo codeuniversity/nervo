@@ -134,3 +134,46 @@ func (s *GrpcServer) WriteToController(_ context.Context, request *proto.WriteTo
 	err := s.Manager.writeToController(request.ControllerPortName, request.Message)
 	return &proto.WriteToControllerResponse{}, err
 }
+
+// WriteToControllerContinuously for the grpc NervoService
+func (s *GrpcServer) WriteToControllerContinuously(stream proto.NervoService_WriteToControllerContinuouslyServer) error {
+	firstMessage, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+	writeChan := make(chan []byte)
+	answer := s.Manager.writeToControllerContinuously(firstMessage.ControllerPortName, writeChan)
+	if answer.err != nil {
+		return answer.err
+	}
+
+	receivedChan := make(chan []byte)
+	doneReceivingChan := make(chan error)
+	go func() {
+		var err error
+		for {
+			message, err := stream.Recv()
+			if err != nil {
+				fmt.Println(err)
+				break
+			}
+			receivedChan <- message.Message
+		}
+		close(receivedChan)
+		doneReceivingChan <- err
+	}()
+
+	for {
+		select {
+		case message := <-receivedChan:
+			writeChan <- message
+			break
+		case <-stream.Context().Done():
+		case message := <-answer.stopChan:
+			close(writeChan)
+			err := <-answer.doneChan
+			message.doneChan <- struct{}{}
+			return err
+		}
+	}
+}

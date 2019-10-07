@@ -19,15 +19,20 @@ const (
 	retainedBufferLength = 2 << 10
 )
 
+type closeContiniousWriterMessage struct {
+	doneChan chan struct{}
+}
+
 type controller struct {
-	SerialPortPath    string
-	Name              string
-	serialPort        *serial.Port
-	outputbuffer      *bytes.Buffer
-	outputMutex       *sync.Mutex
-	readNotifierChan  chan []byte
-	readNotifierMutex *sync.Mutex
-	Error             error
+	SerialPortPath            string
+	Name                      string
+	serialPort                *serial.Port
+	outputbuffer              *bytes.Buffer
+	outputMutex               *sync.Mutex
+	readNotifierChan          chan []byte
+	readNotifierMutex         *sync.Mutex
+	closeContiniousWriterChan chan closeContiniousWriterMessage
+	Error                     error
 }
 
 func newController(serialPort string) *controller {
@@ -166,6 +171,30 @@ func (c *controller) closeSerial() {
 func (c *controller) write(message []byte) error {
 	_, err := c.serialPort.Write(message)
 	return err
+}
+
+func (c *controller) continiouslyWrite(writeChan chan []byte) (stopChan chan closeContiniousWriterMessage, doneChan chan error) {
+	if c.closeContiniousWriterChan != nil {
+		closedChan := make(chan struct{})
+		c.closeContiniousWriterChan <- closeContiniousWriterMessage{doneChan: closedChan}
+		<-closedChan
+	}
+
+	doneChan = make(chan error)
+	stopChan = make(chan closeContiniousWriterMessage)
+	c.closeContiniousWriterChan = stopChan
+	go func() {
+		for message := range writeChan {
+			err := c.write(message)
+			if err != nil {
+				doneChan <- err
+				return
+			}
+		}
+		c.closeContiniousWriterChan = nil
+		doneChan <- nil
+	}()
+	return stopChan, doneChan
 }
 
 func writeHexFileToTemporaryPath(hexFileContent []byte) (path string, cleanup func()) {

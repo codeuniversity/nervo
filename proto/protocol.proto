@@ -51,4 +51,5 @@ service NervoService {
   rpc SetControllerName(ControllerInfo) returns (ControllerListResponse);
   rpc ResetUsb(ResetUsbRequest) returns (ResetUsbResponse);
   rpc WriteToController(WriteToControllerRequest) returns (WriteToControllerResponse);
+  rpc WriteToControllerContinuously(stream WriteToControllerRequest) returns (WriteToControllerResponse);
 }
