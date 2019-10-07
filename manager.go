@@ -50,30 +50,38 @@ type pingMessage struct {
 	pongChan chan struct{}
 }
 
+type writeToControllerMessage struct {
+	portName string
+	message  []byte
+	doneChan chan error
+}
+
 // Manager controls all interactions with the controllers from outside
 type Manager struct {
-	controllers         []*controller
-	currentPortsChan    chan []string
-	listControllersChan chan listControllersMessage
-	readOutputChan      chan readOutputMessage
-	flashChan           chan flashMessage
-	readContinuousChan  chan readContinuousMessage
-	stopReadingChan     chan stopReadingMessage
-	nameControllerChan  chan nameControllerMessage
-	pingChan            chan pingMessage
+	controllers           []*controller
+	currentPortsChan      chan []string
+	listControllersChan   chan listControllersMessage
+	readOutputChan        chan readOutputMessage
+	flashChan             chan flashMessage
+	readContinuousChan    chan readContinuousMessage
+	stopReadingChan       chan stopReadingMessage
+	nameControllerChan    chan nameControllerMessage
+	pingChan              chan pingMessage
+	writeToControllerChan chan writeToControllerMessage
 }
 
 // NewManager retuns a Manager that is ready for use
 func NewManager() *Manager {
 	m := &Manager{
-		currentPortsChan:    make(chan []string),
-		listControllersChan: make(chan listControllersMessage),
-		readOutputChan:      make(chan readOutputMessage),
-		flashChan:           make(chan flashMessage),
-		readContinuousChan:  make(chan readContinuousMessage),
-		stopReadingChan:     make(chan stopReadingMessage),
-		nameControllerChan:  make(chan nameControllerMessage),
-		pingChan:            make(chan pingMessage),
+		currentPortsChan:      make(chan []string),
+		listControllersChan:   make(chan listControllersMessage),
+		readOutputChan:        make(chan readOutputMessage),
+		flashChan:             make(chan flashMessage),
+		readContinuousChan:    make(chan readContinuousMessage),
+		stopReadingChan:       make(chan stopReadingMessage),
+		nameControllerChan:    make(chan nameControllerMessage),
+		pingChan:              make(chan pingMessage),
+		writeToControllerChan: make(chan writeToControllerMessage),
 	}
 
 	go m.lookForNewPorts()
@@ -87,7 +95,6 @@ func NewManager() *Manager {
 func (m *Manager) manageControllers() {
 	for {
 		select {
-
 		case currentPorts := <-m.currentPortsChan:
 			m.handleCurrentPorts(currentPorts)
 			break
@@ -142,6 +149,14 @@ func (m *Manager) manageControllers() {
 			controller := m.controllerForPort(message.portName)
 			if controller != nil {
 				controller.Name = message.name
+			}
+			break
+		case message := <-m.writeToControllerChan:
+			controller := m.controllerForPort(message.portName)
+			if controller != nil {
+				message.doneChan <- controller.write(message.message)
+			} else {
+				message.doneChan <- errors.New("no controller found at " + message.portName)
 			}
 			break
 		case m := <-m.pingChan:
@@ -200,7 +215,7 @@ func (m *Manager) controllerForPort(portName string) *controller {
 }
 
 func (m *Manager) lookForNewPorts() {
-	t := time.NewTicker(time.Second / 2)
+	t := time.NewTicker(time.Second)
 	for {
 		<-t.C
 		ports, err := discoverAttachedControllers()
@@ -220,6 +235,16 @@ func (m *Manager) pingWithTimeout(timeout time.Duration) error {
 		}
 		<-pongChan
 	})
+}
+
+func (m *Manager) writeToController(controllerPortName string, message []byte) error {
+	doneChan := make(chan error)
+	m.writeToControllerChan <- writeToControllerMessage{
+		portName: controllerPortName,
+		message:  message,
+		doneChan: doneChan,
+	}
+	return <-doneChan
 }
 
 func (m *Manager) handleCurrentPorts(currentPorts []string) {

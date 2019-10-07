@@ -128,3 +128,9 @@ func (s *GrpcServer) ResetUsb(context.Context, *proto.ResetUsbRequest) (*proto.R
 		Output: output,
 	}, nil
 }
+
+// WriteToController for the grpc NervoService
+func (s *GrpcServer) WriteToController(_ context.Context, request *proto.WriteToControllerRequest) (*proto.WriteToControllerResponse, error) {
+	err := s.Manager.writeToController(request.ControllerPortName, request.Message)
+	return &proto.WriteToControllerResponse{}, err
+}

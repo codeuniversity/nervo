@@ -163,6 +163,11 @@ func (c *controller) closeSerial() {
 	}
 }
 
+func (c *controller) write(message []byte) error {
+	_, err := c.serialPort.Write(message)
+	return err
+}
+
 func writeHexFileToTemporaryPath(hexFileContent []byte) (path string, cleanup func()) {
 	tmpfile, err := ioutil.TempFile("", "flashing_*.hex")
 	if err != nil {

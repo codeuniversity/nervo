@@ -36,6 +36,13 @@ message ResetUsbResponse{
   string output = 1;
 }
 
+message WriteToControllerRequest{
+  string controller_port_name = 1;
+  bytes message = 2;
+}
+
+message WriteToControllerResponse{}
+
 service NervoService {
   rpc ListControllers(ControllerListRequest) returns (ControllerListResponse);
   rpc ReadControllerOutput(ReadControllerOutputRequest) returns (ReadControllerOutputResponse);
@@ -43,4 +50,5 @@ service NervoService {
   rpc ReadControllerOutputContinuously(ReadControllerOutputRequest)returns(stream ReadControllerOutputResponse);
   rpc SetControllerName(ControllerInfo) returns (ControllerListResponse);
   rpc ResetUsb(ResetUsbRequest) returns (ResetUsbResponse);
+  rpc WriteToController(WriteToControllerRequest) returns (WriteToControllerResponse);
 }

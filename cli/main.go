@@ -54,6 +54,10 @@ func main() {
 		break
 	case "read continuously":
 		readContiniouslyFromController(c, controller)
+		break
+	case "write message":
+		writeToController(c, controller)
+		break
 	case "flash":
 		flashController(c, controller)
 		break
@@ -109,6 +113,24 @@ func readContiniouslyFromController(client proto.NervoServiceClient, controllerN
 		}
 
 		fmt.Printf(response.Output)
+	}
+}
+
+func writeToController(client proto.NervoServiceClient, controllerPortName string) {
+	prompt := promptui.Prompt{
+		Label: "What should the message be?",
+	}
+	message, err := prompt.Run()
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = client.WriteToController(context.Background(), &proto.WriteToControllerRequest{
+		ControllerPortName: controllerPortName,
+		Message:            []byte(message),
+	})
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -190,6 +212,7 @@ func chooseBetweenCommands() string {
 		"flash",
 		"read once",
 		"read continuously",
+		"write message",
 		"set name",
 		"reset",
 	}
