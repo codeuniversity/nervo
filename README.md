@@ -2,6 +2,8 @@
 
 A nervo system for raspberry pies that makes working with multiple microcontrollers less of a pain
 
+![alt](./.img/nervo.png)
+
 ## Requirements
 
 Go version >= 1.12
