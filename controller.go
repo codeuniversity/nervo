@@ -169,6 +169,10 @@ func (c *controller) closeSerial() {
 }
 
 func (c *controller) write(message []byte) error {
+	if message == nil || c.serialPort == nil {
+		return nil
+	}
+
 	_, err := c.serialPort.Write(message)
 	return err
 }
