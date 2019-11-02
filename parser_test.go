@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_parseAnnounceMessage(t *testing.T) {
+func Test_ParseAnnounceMessage(t *testing.T) {
 	tests := []struct {
 		testMessage  string
 		line         string
@@ -61,6 +61,68 @@ func Test_parseAnnounceMessage(t *testing.T) {
 		t.Run(test.testMessage, func(t *testing.T) {
 			parsedName, parsingOk := ParseAnnounceMessage(test.line)
 			assert.Equal(t, test.expectedName, parsedName)
+			assert.Equal(t, test.expectedok, parsingOk)
+		})
+	}
+}
+
+func Test_ParseGaitAction(t *testing.T) {
+	tests := []struct {
+		testMessage     string
+		line            string
+		expectedName    string
+		expectedMessage string
+		expectedok      bool
+	}{
+		{
+			testMessage:     "given a line without spaces",
+			line:            "leg1some_message",
+			expectedName:    "",
+			expectedMessage: "",
+			expectedok:      false,
+		},
+		{
+			testMessage:     "given a line with 1 space",
+			line:            "leg1 some_message",
+			expectedName:    "leg1",
+			expectedMessage: "some_message",
+			expectedok:      true,
+		},
+		{
+			testMessage:     "given a line with multiple spaces",
+			line:            "leg1 some message",
+			expectedName:    "leg1",
+			expectedMessage: "some message",
+			expectedok:      true,
+		},
+		{
+			testMessage:     "given a line with a lowercase name",
+			line:            "leg1 some_message",
+			expectedName:    "leg1",
+			expectedMessage: "some_message",
+			expectedok:      true,
+		},
+		{
+			testMessage:     "given a line with a newline at the end",
+			line:            "leg1 some_message\n",
+			expectedName:    "leg1",
+			expectedMessage: "some_message",
+			expectedok:      true,
+		},
+		{
+			testMessage:     "given a line with a carriage return and newline at the end",
+			line:            "leg1 some_message\r\n",
+			expectedName:    "leg1",
+			expectedMessage: "some_message",
+			expectedok:      true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testMessage, func(t *testing.T) {
+			parsedName, parsedMessage, parsingOk := ParseGaitAction(test.line)
+			assert.Equal(t, test.expectedName, parsedName)
+			assert.Equal(t, test.expectedMessage, parsedMessage)
 			assert.Equal(t, test.expectedok, parsingOk)
 		})
 	}
