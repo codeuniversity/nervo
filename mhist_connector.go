@@ -87,7 +87,7 @@ func (c *MhistConnector) handleNewMessage(m *proto.MeasurementMessage) {
 		return
 	}
 
-	err := c.manager.writeToController(portName, []byte(message))
+	err := c.manager.writeToController(portName, []byte(message+"\n"))
 	if err != nil {
 		log.Println("writting resulted in error:", err)
 	}
