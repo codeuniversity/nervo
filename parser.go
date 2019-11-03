@@ -4,22 +4,32 @@ import (
 	"strings"
 )
 
-// ParseAnnounceMessage parses messages announce messages from the controller.
+// ParseAnnounceMessage parses announce messages from the controller.
 // It considers messages in the form "announce <some_name>" (verb is case insensitive) ok
 func ParseAnnounceMessage(line string) (name string, ok bool) {
+	return parseVerb("announce", line)
+}
+
+// ParseFeedbackMessage parses feedback messages from the controller.
+// It considers messages in the form "feedback <some_name>" (verb is case insensitive) ok
+func ParseFeedbackMessage(line string) (message string, ok bool) {
+	return parseVerb("feedback", line)
+}
+
+func parseVerb(verb, line string) (rest string, ok bool) {
 	splitLine := strings.SplitN(line, " ", 2)
 	if len(splitLine) != 2 {
 		return "", false
 	}
 
-	verb := strings.ToLower(splitLine[0])
-	name = removeNewLineChars(splitLine[1])
+	v := strings.ToLower(splitLine[0])
+	rest = removeNewLineChars(splitLine[1])
 
-	if verb != "announce" {
+	if v != verb {
 		return "", false
 	}
 
-	return name, true
+	return rest, true
 }
 
 // ParseGaitAction parses the gait action message string into a usable leg name and message

@@ -19,7 +19,7 @@ func main() {
 	flag.Parse()
 
 	m := nervo.NewManager()
-	s := nervo.NewGrpcServer(m, 4000)
+	s := nervo.NewGrpcServer(m, grpcPort)
 
 	if mhistAddress != "" {
 		namesFilter := strings.Split(mhistNamesFilter, ",")
@@ -29,12 +29,12 @@ func main() {
 		}
 
 		filter := &proto.Filter{Names: namesFilter}
-		subscriber, err := nervo.NewMhistSubscriber(mhistAddress, filter, m)
+		connector, err := nervo.NewMhistConnector(mhistAddress, filter, m)
 		if err != nil {
 			panic(err)
 		}
 		log.Println("reading from subscription. Subscribed to", namesFilter)
-		go subscriber.ReadMessages()
+		go connector.ReadMessages()
 	}
 
 	s.Listen()
