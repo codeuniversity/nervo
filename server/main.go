@@ -33,6 +33,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+		m.VerbMessageHandler = connector.WriteMessage
 		log.Println("reading from subscription. Subscribed to", namesFilter)
 		go connector.ReadMessages()
 	}

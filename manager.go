@@ -65,7 +65,7 @@ type writeToControllerContinuouslyMessage struct {
 
 // Manager controls all interactions with the controllers from outside
 type Manager struct {
-	verbMessageHandler                func(verb, message string)
+	VerbMessageHandler                func(verb, message string)
 	controllers                       []*controller
 	currentPortsChan                  chan []string
 	readOutputChan                    chan readOutputMessage
@@ -79,9 +79,8 @@ type Manager struct {
 }
 
 // NewManager retuns a Manager that is ready for use
-func NewManager(verbMessageHandler func(verb, message string)) *Manager {
+func NewManager() *Manager {
 	m := &Manager{
-		verbMessageHandler:                verbMessageHandler,
 		currentPortsChan:                  make(chan []string),
 		readOutputChan:                    make(chan readOutputMessage),
 		flashChan:                         make(chan flashMessage),
@@ -292,7 +291,7 @@ func (m *Manager) handleCurrentPorts(currentPorts []string) {
 	for _, newPort := range newPorts {
 		log.Println("discovered new port: ", newPort)
 		controller := newController(newPort)
-		controller.handleVerbMessage = m.verbMessageHandler
+		controller.handleVerbMessage = m.VerbMessageHandler
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {
