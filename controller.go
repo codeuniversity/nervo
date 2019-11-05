@@ -32,6 +32,7 @@ type controller struct {
 	readNotifierChan          chan []byte
 	readNotifierMutex         *sync.Mutex
 	closeContiniousWriterChan chan closeContiniousWriterMessage
+	handleVerbMessage         func(verb, message string)
 	Error                     error
 }
 
@@ -117,6 +118,14 @@ func (c *controller) notifyOrAppendToCappedOutputBuffer(b []byte) {
 	if c.readNotifierChan != nil {
 		c.readNotifierChan <- b
 		return
+	}
+
+	if c.handleVerbMessage != nil {
+		message, ok := ParseFeedbackMessage(string(b))
+		if ok {
+			c.handleVerbMessage("gait_feedback", message)
+			return
+		}
 	}
 
 	c.outputMutex.Lock()
