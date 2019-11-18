@@ -16,6 +16,12 @@ func ParseFeedbackMessage(line string) (message string, ok bool) {
 	return parseVerb("feedback", line)
 }
 
+// ParseSensorDataMessage parses data messages from the controller
+// It considers messages in the form "sensor_data <some_data>"
+func ParseSensorDataMessage(line string) (message string, ok bool) {
+	return parseVerb("sensor_data", line)
+}
+
 func parseVerb(verb, line string) (rest string, ok bool) {
 	splitLine := strings.SplitN(line, " ", 2)
 	if len(splitLine) != 2 {

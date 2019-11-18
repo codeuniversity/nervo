@@ -126,6 +126,10 @@ func (c *controller) notifyOrAppendToCappedOutputBuffer(b []byte) {
 			c.handleVerbMessage("gait_feedback", message)
 			return
 		}
+		message, ok = ParseSensorDataMessage(string(b))
+		if ok {
+			c.handleVerbMessage("sensor_data", message)
+		}
 	}
 
 	c.outputMutex.Lock()
